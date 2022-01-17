@@ -1,7 +1,7 @@
-from model.Board import Board
-from model.Move import Move
-from view.Graphics import *
+from model.board import Board
+from model.move import Move
 import numpy as np
+from view.graphics import *
 
 board = init_board()
 graphics(board.state)

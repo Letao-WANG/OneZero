@@ -1,13 +1,13 @@
 import numpy as np
 
-from model.Move import Move
+from model.move import Move
 
 
 class Board(object):
     x = 1
     o = -1
 
-    def __init__(self, state, next_to_move = 1):
+    def __init__(self, state, next_to_move=1):
         if len(state.shape) != 2 or state.shape[0] != state.shape[1]:
             raise ValueError("Please input the right parameters!")
 
@@ -39,7 +39,7 @@ class Board(object):
 
     def is_move_legal(self, move):
         if move.value != self.next_to_move:
-            print("board.next_to_move: " + str(self.next_to_move) + " move.value: " + str(move.value) )
+            print("board.next_to_move: " + str(self.next_to_move) + " move.value: " + str(move.value))
             return False
 
         x_in_range = self.board_size > move.x_coor >= 0

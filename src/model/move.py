@@ -6,4 +6,3 @@ class Move(object):
         
     def __repr__(self):
         return "x:" + str(self.x_coor) + "y:" + str(self.y_coor) + "v:" + str(self.value)
-

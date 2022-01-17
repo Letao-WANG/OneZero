@@ -1,5 +1,5 @@
-from model.Board import Board
-from model.Move import Move
+from model.board import Board
+from model.move import Move
 from model.TreeNode import TreeNode
 from model.TreeSearch import TreeSearch
 import numpy as np
@@ -25,8 +25,8 @@ def graphics(state):
 
 def init_board():
     init_state = np.zeros((3, 3))
-    init_board = Board(state=init_state, next_to_move=1)
-    root = TreeNode(init_board)
+    board = Board(state=init_state, next_to_move=1)
+    root = TreeNode(board)
     mcts = TreeSearch(root)
     best_node = mcts.best_action(1000)
     c_board = best_node.board

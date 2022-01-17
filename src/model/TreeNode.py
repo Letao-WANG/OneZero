@@ -1,4 +1,4 @@
-from model.Board import *
+from model.board import *
 from collections import defaultdict
 
 
@@ -16,7 +16,7 @@ class TreeNode(object):
 
     @property
     def untried_actions(self):
-        """:type list of Move"""
+        """list of Move"""
         if not hasattr(self, '_untried_actions'):
             self._untried_actions = self.board.get_legal_actions()
         return self._untried_actions
@@ -72,7 +72,7 @@ class TreeNode(object):
 
     def best_child(self, c_param=1.4):
         choices_weights = [
-            (c.q / (c.n)) + c_param * np.sqrt((2 * np.log(self.n) / (c.n)))
+            (c.q / c.n) + c_param * np.sqrt((2 * np.log(self.n) / c.n))
             for c in self.children
         ]
         return self.children[np.argmax(choices_weights)]
