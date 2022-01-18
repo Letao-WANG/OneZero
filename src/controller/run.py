@@ -1,7 +1,16 @@
-from model.board import Board
-from model.move import Move
-import numpy as np
 from view.graphics import *
+
+
+def init_board():
+    init_state = np.zeros((3, 3))
+    ini_board = Board(state=init_state, next_to_move=1)
+    init_root = TreeNode(ini_board)
+    init_mcts = TreeSearch(init_root)
+    init_best_node = init_mcts.best_action(1000)
+    c_board = init_best_node.board
+
+    return c_board
+
 
 board = init_board()
 graphics(board.state)
@@ -20,3 +29,4 @@ while True:
         break
     elif judge(board) == -1:
         continue
+

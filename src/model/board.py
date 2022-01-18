@@ -1,3 +1,4 @@
+import numpy
 import numpy as np
 
 from model.move import Move
@@ -7,7 +8,7 @@ class Board(object):
     x = 1
     o = -1
 
-    def __init__(self, state, next_to_move=1):
+    def __init__(self, state: numpy.ndarray, next_to_move=1):
         if len(state.shape) != 2 or state.shape[0] != state.shape[1]:
             raise ValueError("Please input the right parameters!")
 

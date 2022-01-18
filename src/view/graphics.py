@@ -23,17 +23,6 @@ def graphics(state):
     print("______________________________")
 
 
-def init_board():
-    init_state = np.zeros((3, 3))
-    board = Board(state=init_state, next_to_move=1)
-    root = TreeNode(board)
-    mcts = TreeSearch(root)
-    best_node = mcts.best_action(1000)
-    c_board = best_node.board
-
-    return c_board
-
-
 def get_action(board: Board, next_to_move):
     try:
         location = input("Your move: ")
