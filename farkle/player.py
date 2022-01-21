@@ -7,4 +7,4 @@ class Player(object):
         self.done = done
 
     def __repr__(self):
-        return self.name + "has " + str(self.score) + " scores" + "\n"
+        return self.name + " has " + str(self.score) + " scores" + "\n"

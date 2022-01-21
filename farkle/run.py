@@ -3,7 +3,7 @@ from player import Player
 import random
 from collections import OrderedDict
 
-TARGET_SCORE = 4000
+TARGET_SCORE = 1000
 POINTS = OrderedDict((
     ('111', 1000),
     ('666', 600),
@@ -51,34 +51,12 @@ def user_input(combos, chosen):
             return choice
 
 
-def play_turn(player):
-    roll = roll_dice(6)
+def play_turn(player: Player):
+    """
 
-
-def play_round(players):
-    """:param players: list of Player"""
-    for player in players:
-        # player['score'] += play_turn(player, players, last_round, max_score)
-        if player['score'] >= TARGET_SCORE:
-            player['done'] = True
-            break
-        print('-' * 35)
-
-
-def main():
-    print('=' * 14, 'Farkle', '=' * 14, '\n')
-    number_human = 1
-    number_ai = 1
-    players = [Player(False, name="Human"), Player(True, name="AI")]
-
-    game_over = False
-    while not game_over:
-        game_over = play_round(players)
-        print_status(players)
-
-
-# play turn
-def test(player: Player):
+    :param player: the player that roll dices
+    :return: score that the player gains in this turn
+    """
     name = player.name
     total_score = player.score
     roll = roll_dice(6)
@@ -89,10 +67,10 @@ def test(player: Player):
         print('{} has score {} and {} banked.'.format(*infos))
         print('Dice:', roll if roll else 'Hot dice!')
         combos = [combo for combo in POINTS if combo in roll]
+
         if not combos and not chosen:
             print('xxxxxxxxxxxxx FARKLED xxxxxxxxxxxxx')
-            score = 0
-            break
+            return 0
 
         for idx, c in enumerate(combos, 1):
             print('({}) Remove {} for {} points.'.format(
@@ -116,7 +94,30 @@ def test(player: Player):
     return score
 
 
+def play_round(players: list[Player]):
+    """
+
+    :param players: list of Player
+    :return: if it's game over
+    """
+    for player in players:
+        player.score += play_turn(player)
+        if player.score >= TARGET_SCORE:
+            player.done = True
+            return True
+        print('-' * 35)
+    return False
+
+
+def main():
+    print('=' * 14, 'Farkle', '=' * 14, '\n')
+    players = [Player(False, name='Human'), Player(True, name='AI')]
+    game_over = False
+    while not game_over:
+        game_over = play_round(players)
+        print_status(players)
+
+
 if __name__ == '__main__':
-    # main()
-    test(Player(False, name="Human"))
+    main()
     input('Thank you for playing.')
