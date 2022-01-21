@@ -27,10 +27,20 @@ def roll_dice(num):
 
 
 def combination(original_list: list):
+    """
+    Because list_combinations is a list of tuple, so we need to transform the variable to list_result (list of string)
+    :param original_list:
+    :return:
+    """
     list_combinations = []
     for n in range(1, len(original_list) + 1):
-        list_combinations += list(combinations(original_list, n))
-    return list_combinations
+        list_combinations += combinations(original_list, n)
+
+    list_result = []
+    for t in list_combinations:
+        s = ''.join(t)
+        list_result.append(s)
+    return list_result
 
 
 class StateDate(object):
@@ -62,10 +72,19 @@ class State(object):
         return res
 
     @property
-    def next_states(self):
+    def available_combos(self):
         if self.need_to_score:
             combos = [combo for combo in POINTS if combo in self.state_date.remaining_dice]
-            return combination([self.action_score(combo) for combo in combos])
+            return [combo for combo in combos]
+        else:
+            print("You don not need to call in this method!")
+            return []
+
+    @property
+    def next_states(self):
+        if self.need_to_score:
+            combined_combos = combination(self.available_combos)
+            return [self.action_score(combo) for combo in combined_combos]
         else:
             return [self.action_throw(), self.action_bank()]
 
@@ -82,17 +101,20 @@ class State(object):
         new_state_date = StateDate(new_remaining_dice, self.state_date.scoring_dice)
         return State(new_state_date, self.score, self.score_total, need_to_score=True)
 
-    def action_score(self, combo: str):
-        if combo == '':
+    def action_score(self, scoring_combos: str):
+        if scoring_combos == '':
             print('Farkle!')
             new_state_date = StateDate('None', 'None')
             return State(new_state_date, 0, 0, turn_is_over=True)
         else:
-            new_remaining_dice = self.state_date.remaining_dice.replace(combo, '', 1)
-            new_scoring_dice = combo
+            new_remaining_dice = self.state_date.remaining_dice
+            new_scoring_dice = scoring_combos
+            new_score = self.score
+            for scoring_combo in scoring_combos:
+                new_remaining_dice.replace(scoring_combo, '', 1)
+                new_score += POINTS[scoring_combo]
             new_state_date = StateDate(new_remaining_dice, new_scoring_dice)
-            new_score = POINTS[combo] + self.score
-            return State(new_state_date, new_score, self.score_total)
+        return State(new_state_date, new_score, self.score_total)
 
     def action_bank(self):
         new_state_date = StateDate('None', 'None')
