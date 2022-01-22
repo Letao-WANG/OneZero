@@ -4,6 +4,18 @@ from collections import OrderedDict
 
 TARGET_SCORE = 1000
 POINTS = OrderedDict((
+    ('11111', 3000),
+    ('66666', 1800),
+    ('55555', 1500),
+    ('44444', 1200),
+    ('33333', 900),
+    ('22222', 600),
+    ('1111', 2000),
+    ('6666', 1200),
+    ('5555', 1000),
+    ('4444', 800),
+    ('3333', 600),
+    ('2222', 400),
     ('111', 1000),
     ('666', 600),
     ('555', 500),
@@ -17,18 +29,6 @@ POINTS = OrderedDict((
 
 def roll_dice(num):
     return ''.join(sorted(str(random.randint(1, 6)) for _ in range(num)))
-
-
-def combination(original_list: list[str]):
-    """
-    Because list_combinations is a list of tuple, so we need to transform the variable to list_result (list of string)
-    :param original_list:
-    :return: list[str]
-    """
-    list_combinations = []
-    for n in range(1, len(original_list) + 1):
-        list_combinations += combinations(original_list, n)
-    return list_combinations
 
 
 class StateDate(object):
@@ -60,6 +60,18 @@ class State(object):
         return res
 
     @property
+    def dices(self):
+        return self.state_date.remaining_dice
+
+    @property
+    def available_dices(self):
+        """
+
+        :return: e.g. ['1', '5', '15']
+        """
+        return self.combination(self.available_combos)
+
+    @property
     def available_combos(self):
         """
 
@@ -79,7 +91,7 @@ class State(object):
         :return: list of State
         """
         if self.need_to_score:
-            combined_combos = combination(self.available_combos)
+            combined_combos = self.combination(self.available_combos)
             # list of tuple of string  e.g. [('1'), ('5'), ('1', '5')]
             return [self.action_score(combo) for combo in combined_combos]
         else:
@@ -88,6 +100,33 @@ class State(object):
     @property
     def game_over(self):
         return TARGET_SCORE <= self.score_total
+
+    def verify_combo(self, t: tuple[str]):
+        """
+
+        :param t: e.g. ('1', '5', '15') or ('12345', '1', '5') or ('111', '1')
+        :return:
+        """
+        for i in range(0, len(t)):
+            for j in range(i + 1, len(t)):
+                if t[i] in t[j] or t[j] in t[i]:
+                    return False
+        return True
+
+    def combination(self, original_list: list[str]):
+        """
+        Because list_combinations is a list of tuple, so we need to transform the variable to list_result
+        (list of string)
+        :param original_list:
+        :return: list[tuple(str)]
+        """
+        list_combinations = []
+        for n in range(1, len(original_list) + 1):
+            combos = combinations(original_list, n)
+            for combo in combos:
+                if self.verify_combo(combo):
+                    list_combinations.append(combo)
+        return list_combinations
 
     def action_throw(self):
         if self.state_date.number_of_remaining() == 0:
@@ -111,7 +150,7 @@ class State(object):
             return State(new_state_date, 0, 0, turn_is_over=True)
         else:
             new_remaining_dice = self.state_date.remaining_dice
-            new_scoring_dice = list(scoring_combos)
+            new_scoring_dice = self.state_date.scoring_dice + list(scoring_combos)
             new_score = self.score
             for scoring_combo in scoring_combos:
                 new_remaining_dice = new_remaining_dice.replace(scoring_combo, '', 1)
