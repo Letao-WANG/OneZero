@@ -31,10 +31,27 @@ POINTS = OrderedDict((
 
 
 def roll_dice(num):
+    """
+    Simulate dice roll
+    :param num: number of dice
+    :return: collection of dice represented by string, e.g. '123456'
+    """
     return ''.join(sorted(str(random.randint(1, 6)) for _ in range(num)))
 
 
 class StateData(object):
+    """
+    This class stores information of dice state.
+
+    The difference between scoring_dice and temp_dice is that scoring_dice can be stored in the next state data,
+    but not for temp_dice. Basically using in the interaction of the user.
+
+    Attributes:
+        remaining_dice: dices that still can be thrown
+        scoring_dice: dices that have been selected and scored
+        temp_dice: dices that have been selected only in the current state
+        temp_score: score according to the sum of temp_dice
+    """
     def __init__(self, remaining_dice: str, scoring_dice: list[str], temp_dice=None, temp_score=None):
         self.remaining_dice = remaining_dice
         self.scoring_dice = scoring_dice
@@ -53,7 +70,7 @@ class StateData(object):
 
 def verify_combo(t: tuple[str]):
     """
-
+    Make sure that the combo of tuple are not duplicated
     :param t: e.g. ('1', '5', '15') or ('12345', '1', '5') or ('111', '1')
     :return:
     """
@@ -66,10 +83,12 @@ def verify_combo(t: tuple[str]):
 
 def combination(original_list: list[str]):
     """
+    Combination of list, using for find possible combos.
+
     Because list_combinations is a list of tuple, so we need to transform the variable to list_result
     (list of string)
-    :param original_list:
-    :return: list[tuple(str)]
+    :param original_list:       e.g. ['1', '5']
+    :return: list[tuple(str)]   e.g. ['1', '5', '15']
     """
     list_combinations = []
     for n in range(1, len(original_list) + 1):
@@ -81,26 +100,49 @@ def combination(original_list: list[str]):
 
 
 class State(object):
-    def __init__(self, state_date: StateData, score: int, score_total: int, turn_is_over=False, need_to_score=False):
-        self.state_date = state_date
+    """
+    Basic class of game information.
+
+    One state corresponds to one player, it includes all the information of a game moment.
+    When the game advances, an instance of State develop to the next State,
+    and there are 3 actions (throw, score, bank) to realize it.
+
+    How to use:
+    self.next_states: to get the list of possible next state
+    (could be developed by action throw, score or bank, it depends on the variable need_to_score)
+    self.action_throw: to get the next state after executing the action throw. Score, bank too.
+
+    Attributes:
+        state_data: information of dice state
+        score: score obtained in this turn
+        score_total: total score that has been banked
+        need_to_score: if it is necessary to score a combo in the current state
+        turn_is_over: if this turn has overed
+    """
+    def __init__(self, state_data: StateData, score: int, score_total: int, turn_is_over=False, need_to_score=False):
+        self.state_data = state_data
         self.score = score
         self.score_total = score_total
         self.need_to_score = need_to_score
         self.turn_is_over = turn_is_over
 
     def __repr__(self):
-        res = str(self.state_date) + " score: " + str(self.score) + " score total: " + str(self.score_total)
+        res = str(self.state_data) + " score: " + str(self.score) + " score total: " + str(self.score_total)
         res += " need to score: " + str(self.need_to_score) + " turn_is_over: " + str(self.turn_is_over) + "\n"
         return res
 
     @property
     def dices(self):
-        return self.state_date.remaining_dice
+        """
+        remaining dices, for simplicity
+        :return: remaining_dice
+        """
+        return self.state_data.remaining_dice
 
     @property
     def available_dices(self):
         """
-
+        Get all the possible combo dices with combination
         :return: e.g. ['1', '5', '15']
         """
         return combination(self.available_combos)
@@ -108,20 +150,19 @@ class State(object):
     @property
     def available_combos(self):
         """
-
+        Get all the possible combo dices without combination
         :return: list of string  e.g. ['1', '5']
         """
         if self.need_to_score:
-            combos = [combo for combo in POINTS if combo in self.state_date.remaining_dice]
+            combos = [combo for combo in POINTS if combo in self.state_data.remaining_dice]
             return [combo for combo in combos]
         else:
-            print("You don not need to call in this method!")
             return []
 
     @property
     def next_states(self):
         """
-
+        Develop to the next state of game
         :return: list of State
         """
         if self.need_to_score:
@@ -136,24 +177,30 @@ class State(object):
         return TARGET_SCORE <= self.score_total
 
     def action_throw(self):
-        new_remaining_dice = roll_dice(self.state_date.number_of_remaining())
-        new_state_date = StateData(new_remaining_dice, self.state_date.scoring_dice)
-        new_state = State(new_state_date, self.score, self.score_total, need_to_score=True)
+        """
+        Action to throw the dices
+        :return: next state after throwing
+        """
+        new_remaining_dice = roll_dice(self.state_data.number_of_remaining())
+        new_state_data = StateData(new_remaining_dice, self.state_data.scoring_dice)
+        new_state = State(new_state_data, self.score, self.score_total, need_to_score=True)
 
         if len(new_state.available_combos) == 0:
             # Farkle !
-            return State(new_state_date, 0, 0, turn_is_over=True)
+            return State(new_state_data, 0, 0, turn_is_over=True)
         else:
             return new_state
 
     def action_score(self, scoring_combos: tuple[str]):
         """
+        Action to score selected dices.
+        Move the selected dices (scoring_combos) from remaining_dice to scoring_dice.
 
         :param scoring_combos: e.g. ['1', '5'], ['1'] or ['5']
-        :return:
+        :return: next state after scoring
         """
-        new_remaining_dice = self.state_date.remaining_dice
-        new_scoring_dice = self.state_date.scoring_dice + list(scoring_combos)
+        new_remaining_dice = self.state_data.remaining_dice
+        new_scoring_dice = self.state_data.scoring_dice + list(scoring_combos)
         new_score = self.score
 
         temp_score = 0
@@ -162,16 +209,20 @@ class State(object):
             new_score += POINTS[scoring_combo]
             temp_score += POINTS[scoring_combo]
 
-        new_state_date = StateData(new_remaining_dice, new_scoring_dice, scoring_combos, temp_score)
-        new_state = State(new_state_date, new_score, self.score_total)
+        new_state_data = StateData(new_remaining_dice, new_scoring_dice, scoring_combos, temp_score)
+        new_state = State(new_state_data, new_score, self.score_total)
 
-        if len(new_state.state_date.remaining_dice) == 0:
+        if len(new_state.state_data.remaining_dice) == 0:
             # Hot dice!
             return State(StateData(roll_dice(6), [], scoring_combos, temp_score), new_state.score, 0, need_to_score=True)
         else:
             return new_state
 
     def action_bank(self):
-        new_state_date = StateData('None', [])
+        """
+        Action to bank the score
+        :return: end state with total score
+        """
+        new_state_data = StateData('None', [])
         new_score_total = self.score + self.score_total
-        return State(new_state_date, 0, new_score_total, turn_is_over=True)
+        return State(new_state_data, 0, new_score_total, turn_is_over=True)

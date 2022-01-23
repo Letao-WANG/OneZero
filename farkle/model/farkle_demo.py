@@ -20,17 +20,17 @@ def play_turn(state: State):
             print("Dices: " + str(state.dices))
             next_states = state.next_states
             for index, next_state in enumerate(next_states, 1):
-                print(str(index) + ') Choose ' + str(next_state.state_date.temp_dice) + ' for scoring ' +
-                      str(next_state.state_date.temp_score) + ' points')
+                print(str(index) + ') Choose ' + str(next_state.state_data.temp_dice) + ' for scoring ' +
+                      str(next_state.state_data.temp_score) + ' points')
             choice = input_int(len(next_states))
 
             state = next_states[choice-1]
-            if len(state.state_date.remaining_dice) == 6:
+            if len(state.dices) == 6:
                 print('Hot dice!')
             print(state)
         else:
             print('1) Choose to continue rolling the remaining dice ')
-            print('2) Choose ' + str(state.state_date.scoring_dice) + ' for banking ' +
+            print('2) Choose ' + str(state.state_data.scoring_dice) + ' for banking ' +
                   str(state.score) + ' points')
             choice = input_int(2)
             state = state.next_states[choice-1]
