@@ -4,12 +4,15 @@ from collections import OrderedDict
 
 TARGET_SCORE = 1000
 POINTS = OrderedDict((
-    ('11111', 3000),
-    ('66666', 1800),
-    ('55555', 1500),
-    ('44444', 1200),
-    ('33333', 900),
-    ('22222', 600),
+    ('123456', 1500),
+    ('12345', 500),
+    ('23456', 700),
+    ('11111', 4000),
+    ('66666', 2400),
+    ('55555', 2000),
+    ('44444', 1600),
+    ('33333', 1200),
+    ('22222', 800),
     ('1111', 2000),
     ('6666', 1200),
     ('5555', 1000),
@@ -31,10 +34,12 @@ def roll_dice(num):
     return ''.join(sorted(str(random.randint(1, 6)) for _ in range(num)))
 
 
-class StateDate(object):
-    def __init__(self, remaining_dice: str, scoring_dice: list[str]):
+class StateData(object):
+    def __init__(self, remaining_dice: str, scoring_dice: list[str], temp_dice=None, temp_score=None):
         self.remaining_dice = remaining_dice
         self.scoring_dice = scoring_dice
+        self.temp_dice = temp_dice
+        self.temp_score = temp_score
 
     def __repr__(self):
         return "remaining dice: " + self.remaining_dice + " scoring dice: " + str(self.scoring_dice)
@@ -46,8 +51,37 @@ class StateDate(object):
         return len(self.scoring_dice)
 
 
+def verify_combo(t: tuple[str]):
+    """
+
+    :param t: e.g. ('1', '5', '15') or ('12345', '1', '5') or ('111', '1')
+    :return:
+    """
+    for i in range(0, len(t)):
+        for j in range(i + 1, len(t)):
+            if t[i] in t[j] or t[j] in t[i]:
+                return False
+    return True
+
+
+def combination(original_list: list[str]):
+    """
+    Because list_combinations is a list of tuple, so we need to transform the variable to list_result
+    (list of string)
+    :param original_list:
+    :return: list[tuple(str)]
+    """
+    list_combinations = []
+    for n in range(1, len(original_list) + 1):
+        combos = combinations(original_list, n)
+        for combo in combos:
+            if verify_combo(combo):
+                list_combinations.append(combo)
+    return list_combinations
+
+
 class State(object):
-    def __init__(self, state_date: StateDate, score: int, score_total: int, turn_is_over=False, need_to_score=False):
+    def __init__(self, state_date: StateData, score: int, score_total: int, turn_is_over=False, need_to_score=False):
         self.state_date = state_date
         self.score = score
         self.score_total = score_total
@@ -69,7 +103,7 @@ class State(object):
 
         :return: e.g. ['1', '5', '15']
         """
-        return self.combination(self.available_combos)
+        return combination(self.available_combos)
 
     @property
     def available_combos(self):
@@ -91,7 +125,7 @@ class State(object):
         :return: list of State
         """
         if self.need_to_score:
-            combined_combos = self.combination(self.available_combos)
+            combined_combos = combination(self.available_combos)
             # list of tuple of string  e.g. [('1'), ('5'), ('1', '5')]
             return [self.action_score(combo) for combo in combined_combos]
         else:
@@ -101,42 +135,16 @@ class State(object):
     def game_over(self):
         return TARGET_SCORE <= self.score_total
 
-    def verify_combo(self, t: tuple[str]):
-        """
-
-        :param t: e.g. ('1', '5', '15') or ('12345', '1', '5') or ('111', '1')
-        :return:
-        """
-        for i in range(0, len(t)):
-            for j in range(i + 1, len(t)):
-                if t[i] in t[j] or t[j] in t[i]:
-                    return False
-        return True
-
-    def combination(self, original_list: list[str]):
-        """
-        Because list_combinations is a list of tuple, so we need to transform the variable to list_result
-        (list of string)
-        :param original_list:
-        :return: list[tuple(str)]
-        """
-        list_combinations = []
-        for n in range(1, len(original_list) + 1):
-            combos = combinations(original_list, n)
-            for combo in combos:
-                if self.verify_combo(combo):
-                    list_combinations.append(combo)
-        return list_combinations
-
     def action_throw(self):
-        if self.state_date.number_of_remaining() == 0:
-            new_remaining_dice = roll_dice(6)
-            print('Hot dice!')
-        else:
-            new_remaining_dice = roll_dice(self.state_date.number_of_remaining())
+        new_remaining_dice = roll_dice(self.state_date.number_of_remaining())
+        new_state_date = StateData(new_remaining_dice, self.state_date.scoring_dice)
+        new_state = State(new_state_date, self.score, self.score_total, need_to_score=True)
 
-        new_state_date = StateDate(new_remaining_dice, self.state_date.scoring_dice)
-        return State(new_state_date, self.score, self.score_total, need_to_score=True)
+        if len(new_state.available_combos) == 0:
+            # Farkle !
+            return State(new_state_date, 0, 0, turn_is_over=True)
+        else:
+            return new_state
 
     def action_score(self, scoring_combos: tuple[str]):
         """
@@ -144,21 +152,26 @@ class State(object):
         :param scoring_combos: e.g. ['1', '5'], ['1'] or ['5']
         :return:
         """
-        if len(scoring_combos) == 0:
-            print('Farkle!')
-            new_state_date = StateDate('None', [])
-            return State(new_state_date, 0, 0, turn_is_over=True)
+        new_remaining_dice = self.state_date.remaining_dice
+        new_scoring_dice = self.state_date.scoring_dice + list(scoring_combos)
+        new_score = self.score
+
+        temp_score = 0
+        for scoring_combo in scoring_combos:
+            new_remaining_dice = new_remaining_dice.replace(scoring_combo, '', 1)
+            new_score += POINTS[scoring_combo]
+            temp_score += POINTS[scoring_combo]
+
+        new_state_date = StateData(new_remaining_dice, new_scoring_dice, scoring_combos, temp_score)
+        new_state = State(new_state_date, new_score, self.score_total)
+
+        if len(new_state.state_date.remaining_dice) == 0:
+            # Hot dice!
+            return State(StateData(roll_dice(6), [], scoring_combos, temp_score), new_state.score, 0, need_to_score=True)
         else:
-            new_remaining_dice = self.state_date.remaining_dice
-            new_scoring_dice = self.state_date.scoring_dice + list(scoring_combos)
-            new_score = self.score
-            for scoring_combo in scoring_combos:
-                new_remaining_dice = new_remaining_dice.replace(scoring_combo, '', 1)
-                new_score += POINTS[scoring_combo]
-            new_state_date = StateDate(new_remaining_dice, new_scoring_dice)
-        return State(new_state_date, new_score, self.score_total)
+            return new_state
 
     def action_bank(self):
-        new_state_date = StateDate('None', [])
+        new_state_date = StateData('None', [])
         new_score_total = self.score + self.score_total
         return State(new_state_date, 0, new_score_total, turn_is_over=True)
