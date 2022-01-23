@@ -15,6 +15,7 @@ def input_int(max_number: int):
 
 
 def play_turn(state: State):
+    print('Human:')
     while True:
         if state.need_to_score:
             print("Dices: " + str(state.dices))
@@ -42,11 +43,26 @@ def play_turn(state: State):
             print(state)
 
 
+def ai_play_turn(state: State):
+    print('AI:')
+    next_states = state.next_states
+    return next_states[random.randint(0, len(next_states))]
+
+
+def play_round(state: State, ai_state: State):
+    while not state.game_over or not ai_state.game_over:
+        state = play_turn(state)
+        ai_state = ai_play_turn(ai_state)
+    print("Game over!")
+    print('state: ' + str(state))
+    print('ai:' + str(ai_state))
+
+
 def main():
     print('Welcome to the farkle game!')
     original_state = State(StateData(roll_dice(6), []), 0, 0, need_to_score=True)
-    state = play_turn(original_state)
-    print('Final state: ' + str(state))
+    ai_state = State(StateData(roll_dice(6), []), 0, 0, need_to_score=True)
+    play_round(original_state, ai_state)
 
 
 main()
