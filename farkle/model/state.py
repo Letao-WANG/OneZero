@@ -48,11 +48,11 @@ class StateData(object):
 
     Attributes:
         remaining_dice: dices that still can be thrown
-        scoring_dice: dices that have been selected and scored
+        scoring_dice: type list[str], dices that have been selected and scored
         temp_dice: dices that have been selected only in the current state
         temp_score: score according to the sum of temp_dice
     """
-    def __init__(self, remaining_dice: str, scoring_dice: list[str], temp_dice=None, temp_score=None):
+    def __init__(self, remaining_dice: str, scoring_dice:list[str], temp_dice=None, temp_score=None):
         self.remaining_dice = remaining_dice
         self.scoring_dice = scoring_dice
         self.temp_dice = temp_dice
@@ -119,7 +119,7 @@ class State(object):
         need_to_score: if it is necessary to score a combo in the current state
         turn_is_over: if this turn has overed
     """
-    def __init__(self, state_data: StateData, score: int, score_total: int, turn_is_over=False, need_to_score=False):
+    def __init__(self, state_data: StateData, score=0, score_total=0, turn_is_over=False, need_to_score=False):
         self.state_data = state_data
         self.score = score
         self.score_total = score_total
@@ -181,13 +181,16 @@ class State(object):
         Action to throw the dices
         :return: next state after throwing
         """
-        new_remaining_dice = roll_dice(self.state_data.number_of_remaining())
+        if self.state_data.number_of_remaining() == 0:
+            new_remaining_dice = roll_dice(6)
+        else:
+            new_remaining_dice = roll_dice(self.state_data.number_of_remaining())
         new_state_data = StateData(new_remaining_dice, self.state_data.scoring_dice)
         new_state = State(new_state_data, self.score, self.score_total, need_to_score=True)
 
-        if len(new_state.available_combos) == 0:
+        if len(new_state.available_combos) == 0 and len(new_state.state_data.remaining_dice) != 0:
             # Farkle !
-            return State(new_state_data, 0, 0, turn_is_over=True)
+            return State(new_state_data, score=0, score_total=self.score_total, turn_is_over=True)
         else:
             return new_state
 
@@ -214,7 +217,7 @@ class State(object):
 
         if len(new_state.state_data.remaining_dice) == 0:
             # Hot dice!
-            return State(StateData(roll_dice(6), [], scoring_combos, temp_score), new_state.score, 0, need_to_score=True)
+            return State(StateData(roll_dice(6), [], scoring_combos, temp_score), new_state.score, self.score_total, need_to_score=True)
         else:
             return new_state
 
@@ -223,6 +226,5 @@ class State(object):
         Action to bank the score
         :return: end state with total score
         """
-        new_state_data = StateData('None', [])
         new_score_total = self.score + self.score_total
-        return State(new_state_data, 0, new_score_total, turn_is_over=True)
+        return State(StateData(roll_dice(6), []), score_total=new_score_total, need_to_score=True, turn_is_over=True)
