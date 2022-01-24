@@ -39,7 +39,7 @@ def roll_dice(num):
     return ''.join(sorted(str(random.randint(1, 6)) for _ in range(num)))
 
 
-class StateData(object):
+class StateDice(object):
     """
     This class stores information of dice state.
 
@@ -52,14 +52,15 @@ class StateData(object):
         temp_dice: dices that have been selected only in the current state
         temp_score: score according to the sum of temp_dice
     """
-    def __init__(self, remaining_dice: str, scoring_dice:list[str], temp_dice=None, temp_score=None):
+
+    def __init__(self, remaining_dice: str, scoring_dice: list[str], temp_dice=None, temp_score=None):
         self.remaining_dice = remaining_dice
         self.scoring_dice = scoring_dice
         self.temp_dice = temp_dice
         self.temp_score = temp_score
 
     def __repr__(self):
-        return "remaining dice: " + self.remaining_dice + " scoring dice: " + str(self.scoring_dice)
+        return "remaining dice: " + self.remaining_dice + ", scoring dice: " + str(self.scoring_dice)
 
     def number_of_remaining(self):
         return len(self.remaining_dice)
@@ -113,22 +114,23 @@ class State(object):
     self.action_throw: to get the next state after executing the action throw. Score, bank too.
 
     Attributes:
-        state_data: information of dice state
+        state_dice: information of dice state
         score: score obtained in this turn
         score_total: total score that has been banked
         need_to_score: if it is necessary to score a combo in the current state
         turn_is_over: if this turn has overed
     """
-    def __init__(self, state_data: StateData, score=0, score_total=0, turn_is_over=False, need_to_score=False):
-        self.state_data = state_data
+
+    def __init__(self, state_dice: StateDice, score=0, score_total=0, turn_is_over=False, need_to_score=False):
+        self.state_dice = state_dice
         self.score = score
         self.score_total = score_total
         self.need_to_score = need_to_score
         self.turn_is_over = turn_is_over
 
     def __repr__(self):
-        res = str(self.state_data) + " score: " + str(self.score) + " score total: " + str(self.score_total)
-        res += " need to score: " + str(self.need_to_score) + " turn_is_over: " + str(self.turn_is_over) + "\n"
+        res = str(self.state_dice) + ", score: " + str(self.score) + ", score total: " + str(self.score_total)
+        res += ", need to score: " + str(self.need_to_score) + ", turn_is_over: " + str(self.turn_is_over)
         return res
 
     @property
@@ -137,7 +139,7 @@ class State(object):
         remaining dices, for simplicity
         :return: remaining_dice
         """
-        return self.state_data.remaining_dice
+        return self.state_dice.remaining_dice
 
     @property
     def available_dices(self):
@@ -154,7 +156,7 @@ class State(object):
         :return: list of string  e.g. ['1', '5']
         """
         if self.need_to_score:
-            combos = [combo for combo in POINTS if combo in self.state_data.remaining_dice]
+            combos = [combo for combo in POINTS if combo in self.state_dice.remaining_dice]
             return [combo for combo in combos]
         else:
             return []
@@ -181,14 +183,14 @@ class State(object):
         Action to throw the dices
         :return: next state after throwing
         """
-        if self.state_data.number_of_remaining() == 0:
+        if self.state_dice.number_of_remaining() == 0:
             new_remaining_dice = roll_dice(6)
         else:
-            new_remaining_dice = roll_dice(self.state_data.number_of_remaining())
-        new_state_data = StateData(new_remaining_dice, self.state_data.scoring_dice)
+            new_remaining_dice = roll_dice(self.state_dice.number_of_remaining())
+        new_state_data = StateDice(new_remaining_dice, self.state_dice.scoring_dice)
         new_state = State(new_state_data, self.score, self.score_total, need_to_score=True)
 
-        if len(new_state.available_combos) == 0 and len(new_state.state_data.remaining_dice) != 0:
+        if len(new_state.available_combos) == 0 and len(new_state.state_dice.remaining_dice) != 0:
             # Farkle !
             return State(new_state_data, score=0, score_total=self.score_total, turn_is_over=True)
         else:
@@ -202,8 +204,8 @@ class State(object):
         :param scoring_combos: e.g. ['1', '5'], ['1'] or ['5']
         :return: next state after scoring
         """
-        new_remaining_dice = self.state_data.remaining_dice
-        new_scoring_dice = self.state_data.scoring_dice + list(scoring_combos)
+        new_remaining_dice = self.state_dice.remaining_dice
+        new_scoring_dice = self.state_dice.scoring_dice + list(scoring_combos)
         new_score = self.score
 
         temp_score = 0
@@ -212,12 +214,13 @@ class State(object):
             new_score += POINTS[scoring_combo]
             temp_score += POINTS[scoring_combo]
 
-        new_state_data = StateData(new_remaining_dice, new_scoring_dice, scoring_combos, temp_score)
+        new_state_data = StateDice(new_remaining_dice, new_scoring_dice, scoring_combos, temp_score)
         new_state = State(new_state_data, new_score, self.score_total)
 
-        if len(new_state.state_data.remaining_dice) == 0:
+        if len(new_state.state_dice.remaining_dice) == 0:
             # Hot dice!
-            return State(StateData(roll_dice(6), [], scoring_combos, temp_score), new_state.score, self.score_total, need_to_score=True)
+            return State(StateDice(roll_dice(6), [], scoring_combos, temp_score), new_state.score, self.score_total,
+                         need_to_score=True)
         else:
             return new_state
 
@@ -227,4 +230,4 @@ class State(object):
         :return: end state with total score
         """
         new_score_total = self.score + self.score_total
-        return State(StateData(roll_dice(6), []), score_total=new_score_total, need_to_score=True, turn_is_over=True)
+        return State(StateDice(roll_dice(6), []), score_total=new_score_total, need_to_score=True, turn_is_over=True)
